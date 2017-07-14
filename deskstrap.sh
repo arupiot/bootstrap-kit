@@ -2,45 +2,45 @@
 # Arup IoT Bootstrapping Code
 
 if [ "$EUID" -ne 0 ]
-  then echo "This script must be run as root or using sudo."
+  then echo -e "\e[31mThis script must be run as root or using sudo.\e[0m"
   exit
 fi
 
-echo 'Starting setup. All normal setup output is logged to setup.log'
+echo -e '\e[94mStarting setup. All normal setup output is logged to setup.log\e[0m'
 cd "$(dirname "$0")"
 > setup.log
 
 if ping -c 1 8.8.8.8 &> /dev/null
 then
-  echo 'Network connection available'
+  echo -e '\e[32mNetwork connection available\e[0m'
 else
-  echo "No network connection available. Configuring WiFi..."
+  echo -e "\e[31mNo network connection available. Configuring WiFi...\e[0m"
   read -p "SSID: " SSID
   read -p "PSK: " PSK
   grep -q -F $SSID /etc/wpa_supplicant/wpa_supplicant.conf || wpa_passphrase $SSID $PSK >> /etc/wpa_supplicant/wpa_supplicant.conf
   wpa_cli reconfigure >>setup.log
-  echo "Waiting for WiFi to connect..."
+  echo -e "\e[94mWaiting for WiFi to connect...\e[0m"
   while ! ping -c 1 8.8.8.8 &> /dev/null; do
     sleep 1
   done
-  echo "Network connection established."
+  echo -e "\e[32mNetwork connection established.\e[0m"
 fi
 
-echo "Updating Apt and Installing Packages..."
+echo -e "\e[94mUpdating Apt and Installing Packages...\e[0m"
 apt-get update >>setup.log
-apt-get install --assume-yes python vim bash-completion curl git wget pm-utils >>setup.log
+apt-get install --assume-yes python vim bash-completion curl git wget pm-utils python-dev python-setuptools libjpeg-dev >>setup.log
 
-echo "Installing pip..."
+echo -e "\e[94mInstalling pip...\e[0m"
 if ! type "pip" > /dev/null 2>&1; then
   python < <(curl -s https://bootstrap.pypa.io/get-pip.py) >>setup.log
 fi
 
-echo "Installing brickd..."
+echo -e "\e[94mInstalling brickd...\e[0m"
 wget -q http://download.tinkerforge.com/tools/brickd/linux/brickd_linux_latest_armhf.deb >>setup.log
 dpkg --force-confnew -i brickd_linux_latest_armhf.deb >>setup.log 2>>setup.log
 rm brickd_linux_latest_armhf.deb
 
-echo "Installing/updating deskcontrol..."
+echo -e "\e[94mInstalling/updating deskcontrol...\e[0m"
 if [ -d "deskcontrol" ]; then
   cd deskcontrol/
   git pull >>setup.log 2>&1
@@ -55,7 +55,9 @@ NEW_UUID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)
 
 read -p "Influx Password: " PASSWORD
 
-echo "SHORT_IDENT = '$NEW_UUID'
+echo -e "HOST = 'localhost'
+
+SHORT_IDENT = '$NEW_UUID'
 
 INFLUX_AUTH = {
     'host': '130.211.66.54',
@@ -64,10 +66,10 @@ INFLUX_AUTH = {
     'pass': '$PASSWORD',
     'db': 'iotdesks'}" > config_local.py
 
-echo "(Re)starting deskcontrol..."
+echo -e "\e[94m(Re)starting deskcontrol...\e[0m"
 sudo cp deskcontrol /etc/init.d/deskcontrol
 sudo update-rc.d deskcontrol defaults >>setup.log
 sudo service deskcontrol restart >>setup.log
 
-echo 'Setup complete.'
-echo "Desk UUID: $NEW_UUID"
+echo -e '\e[32mSetup complete.\e[0m'
+echo -e "\e[94mDesk UUID: $NEW_UUID\e[0m"

@@ -49,7 +49,7 @@ else
   cd deskcontrol/
 fi
 
-pip install -r requirements.txt
+pip install -r requirements.txt >>setup.log 2>>setup.log
 
 NEW_UUID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)
 

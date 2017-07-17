@@ -43,9 +43,9 @@ rm brickd_linux_latest_armhf.deb
 echo -e "\e[94mInstalling/updating deskcontrol...\e[0m"
 if [ -d "deskcontrol" ]; then
   cd deskcontrol/
-  git pull >>setup.log 2>&1
+  sudo -u pi -H git pull >>setup.log 2>&1
 else
-  git clone https://github.com/arupiot/deskcontrol.git >>setup.log
+  sudo -u pi -H git clone https://github.com/arupiot/deskcontrol.git >>setup.log
   cd deskcontrol/
 fi
 
@@ -69,6 +69,8 @@ INFLUX_AUTH = {
 echo -e "\e[94m(Re)starting deskcontrol...\e[0m"
 sudo cp deskcontrol /etc/init.d/deskcontrol
 sudo update-rc.d deskcontrol defaults >>setup.log
+sudo touch /var/log/deskcontrol.log
+sudo chown pi:pi /var/log/deskcontrol.log
 sudo service deskcontrol restart >>setup.log
 
 echo -e '\e[32mSetup complete.\e[0m'

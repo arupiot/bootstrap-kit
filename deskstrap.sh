@@ -28,7 +28,8 @@ fi
 
 echo -e "\e[94mUpdating Apt and Installing Packages...\e[0m"
 apt-get update >>setup.log
-apt-get install --assume-yes python vim bash-completion curl git wget pm-utils python-dev python-setuptools libjpeg-dev >>setup.log
+apt-get install --assume-yes python vim bash-completion curl git wget pm-utils python-dev python-setuptools libjpeg-dev ifmetric >>setup.log
+apt-get clean
 
 echo -e "\e[94mInstalling pip...\e[0m"
 if ! type "pip" > /dev/null 2>&1; then
@@ -64,10 +65,12 @@ INFLUX_AUTH = {
     'port': 8086,
     'user': 'influx',
     'pass': '$PASSWORD',
-    'db': 'iotdesks'}" > config_local.py
+    'db': 'iotdesks'}" > deskcontrol/config_local.py
+
+chown pi:pi deskcontrol/config_local.py
 
 echo -e "\e[94m(Re)starting deskcontrol...\e[0m"
-sudo cp deskcontrol /etc/init.d/deskcontrol
+sudo cp deskcontrol.init /etc/init.d/deskcontrol
 sudo update-rc.d deskcontrol defaults >>setup.log
 sudo touch /var/log/deskcontrol.log
 sudo chown pi:pi /var/log/deskcontrol.log

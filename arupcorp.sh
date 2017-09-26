@@ -61,6 +61,7 @@ then
   echo -e "Proxy proxy.ha.arup.com:80" >> /etc/cntlm.conf
   echo -e "NoProxy localhost, 127.0.0.*, 10.*, 192.168.*" >> /etc/cntlm.conf
   echo -e "Listen 127.0.0.1:3128" >> /etc/cntlm.conf
+  echo -e "#NoProxy *" >> /etc/cntlm.conf
 fi
 
 grep -q -F 'http_proxy=127.0.0.1:3128' /etc/environment || echo -e 'http_proxy=127.0.0.1:3128' >> /etc/environment
@@ -110,37 +111,6 @@ if [ -f /etc/init.d/ntp ]; then
   service ntp stop >>setup.log
   ntpd -gq >>setup.log
   service ntp start >>setup.log
-fi
-
-read -r -n 1 -p "Do you need to be able to connect while not on the Arup network? (y/N) " ext_proxy
-echo
-if [[ $ext_proxy =~ ^[Yy]$ ]]
-then
-  echo -e '\e[94mUpdating aptitude repository...\e[0m'
-
-  apt-get update >>setup.log
-
-  echo -e '\e[94mDownloading and configuring tinyproxy...\e[0m'
-
-  apt-get install --assume-yes tinyproxy >>setup.log
-
-  grep -q -F 'Proxy localhost:3129' /etc/cntlm.conf || echo -e 'Proxy localhost:3129' >> /etc/cntlm.conf
-
-  sed -i -e 's/Port 8888/#Port 8888/g' /etc/tinyproxy.conf
-  grep -q -F 'Port 3129' /etc/tinyproxy.conf || echo -e 'Port 3129' >> /etc/tinyproxy.conf
-  grep -q -F 'Allow 127.0.0.1' /etc/tinyproxy.conf || echo -e 'Allow 127.0.0.1' >> /etc/tinyproxy.conf
-
-  service tinyproxy restart >>setup.log
-  service cntlm restart >>setup.log
-
-  echo -e '\e[94mChecking connection through the proxy...\e[0m'
-  if wget -q -O /dev/null -o /dev/null "https://google.com/";
-  then
-      echo -e '\e[32mProxy connection appears to be working...\e[0m'
-  else
-      echo -e '\e[31mConnection failed... there may be error messages above or in setup.log to resolve.\e[0m'
-      exit
-  fi
 fi
 
 echo -e '\e[32mSetup complete.\e[0m'

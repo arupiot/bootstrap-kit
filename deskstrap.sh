@@ -28,8 +28,16 @@ fi
 
 echo -e "\e[94mUpdating Apt and Installing Packages...\e[0m"
 apt-get update >>setup.log
-apt-get install --assume-yes python vim bash-completion curl git wget pm-utils python-dev python-setuptools libjpeg-dev ifmetric >>setup.log
+apt-get install --assume-yes python vim bash-completion curl git wget pm-utils python-dev python-setuptools libjpeg-dev ifmetric python-cryptography >>setup.log
 apt-get clean
+
+echo -e "\e[94mHardening Pi...\e[0m"
+dphys-swapfile swapoff
+dphys-swapfile uninstall
+update-rc.d dphys-swapfile remove
+iw dev wlan0 set power_save off
+
+grep -q -F $'interface eth1\nmetric 400' /etc/dhcpcd.conf || echo $'interface eth1\nmetric 400' >> /etc/dhcpcd.conf
 
 echo -e "\e[94mInstalling pip...\e[0m"
 if ! type "pip" > /dev/null 2>&1; then
@@ -37,9 +45,11 @@ if ! type "pip" > /dev/null 2>&1; then
 fi
 
 echo -e "\e[94mInstalling brickd...\e[0m"
-wget -q http://download.tinkerforge.com/tools/brickd/linux/brickd_linux_latest_armhf.deb >>setup.log
-dpkg --force-confnew -i brickd_linux_latest_armhf.deb >>setup.log 2>>setup.log
-rm brickd_linux_latest_armhf.deb
+if ! type "brickd" > /dev/null 2>&1; then
+    wget -q http://download.tinkerforge.com/tools/brickd/linux/brickd_linux_latest_armhf.deb >>setup.log
+    dpkg --force-confnew -i brickd_linux_latest_armhf.deb >>setup.log 2>>setup.log
+    rm brickd_linux_latest_armhf.deb
+fi
 
 echo -e "\e[94mInstalling/updating deskcontrol...\e[0m"
 if [ -d "deskcontrol" ]; then
@@ -52,29 +62,8 @@ fi
 
 pip install -r requirements.txt >>setup.log 2>>setup.log
 
-NEW_UUID=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 4 | head -n 1)
-
-read -p "Influx Password: " PASSWORD
-
-echo -e "HOST = 'localhost'
-
-SHORT_IDENT = '$NEW_UUID'
-
-INFLUX_AUTH = {
-    'host': '130.211.66.54',
-    'port': 8086,
-    'user': 'influx',
-    'pass': '$PASSWORD',
-    'db': 'iotdesks'}" > deskcontrol/config_local.py
-
-chown pi:pi deskcontrol/config_local.py
-
-echo -e "\e[94m(Re)starting deskcontrol...\e[0m"
+echo -e "\e[94mSetup deskcontrol service...\e[0m"
 sudo cp deskcontrol.init /etc/init.d/deskcontrol
-sudo update-rc.d deskcontrol defaults >>setup.log
+sudo update-rc.d deskcontrol defaults
 sudo touch /var/log/deskcontrol.log
 sudo chown pi:pi /var/log/deskcontrol.log
-sudo service deskcontrol restart >>setup.log
-
-echo -e '\e[32mSetup complete.\e[0m'
-echo -e "\e[94mDesk UUID: $NEW_UUID\e[0m"
